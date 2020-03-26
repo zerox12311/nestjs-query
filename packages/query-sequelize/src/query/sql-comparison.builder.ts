@@ -20,12 +20,12 @@ export class SQLComparisionBuilder<Entity> {
     lte: Op.lte,
     like: Op.like,
     in: Op.in,
-    notIn: Op.notIn,
+    notin: Op.notIn,
     notlike: Op.notLike,
     ilike: Op.iLike,
     notilike: Op.notILike,
     is: Op.is,
-    isNot: Op.not,
+    isnot: Op.not,
   };
 
   constructor(readonly comparisonMap: Record<string, symbol> = SQLComparisionBuilder.DEFAULT_COMPARISON_MAP) {}

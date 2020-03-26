@@ -62,6 +62,9 @@ export class FilterQueryBuilder<Entity> {
   updateOptions(query: Query<Entity>): UpdateOptions {
     let opts: UpdateOptions = { where: {} };
     opts = this.applyFilter(opts, query.filter);
+    if (!opts.where) {
+      opts.where = {};
+    }
     opts = this.applyPaging(opts, query.paging);
     return opts;
   }

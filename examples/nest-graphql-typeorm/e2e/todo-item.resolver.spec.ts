@@ -8,7 +8,7 @@ import { AUTH_HEADER_NAME } from '../src/constants';
 import { refresh } from './fixtures';
 import { edgeNodes, pageInfoField, subTaskFields, tagFields, todoItemFields } from './graphql-fragments';
 
-describe('TodoItemResolver (e2e)', () => {
+describe('TodoItemResolver (typeorm - e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

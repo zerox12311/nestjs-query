@@ -6,7 +6,7 @@ import { AppModule } from '../src/app.module';
 import { refresh } from './fixtures';
 import { edgeNodes, pageInfoField, tagFields, todoItemFields } from './graphql-fragments';
 
-describe('TagResolver (e2e)', () => {
+describe('TagResolver (typeorm - e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -666,11 +666,11 @@ describe('TagResolver (e2e)', () => {
             startCursor: 'YXJyYXljb25uZWN0aW9uOjA=',
           });
           // @ts-ignore
-          expect(edges.map(e => e.node.title)).toEqual([
-            'Create Nest App',
+          expect(edges.map(e => e.node.title).sort()).toEqual([
+            'Add Todo Item Resolver',
             'Create Entity',
             'Create Entity Service',
-            'Add Todo Item Resolver',
+            'Create Nest App',
             'How to create item With Sub Tasks',
           ]);
         });

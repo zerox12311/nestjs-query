@@ -22,10 +22,7 @@ export class TestRelation extends Model<TestRelation> {
   @BelongsTo(() => TestEntity)
   testEntity?: TestEntity;
 
-  @BelongsToMany(
-    () => TestEntity,
-    () => TestEntityTestRelationEntity,
-  )
+  @BelongsToMany(() => TestEntity, () => TestEntityTestRelationEntity)
   manyTestEntities?: TestEntity[];
 
   @BelongsTo(() => TestEntity)

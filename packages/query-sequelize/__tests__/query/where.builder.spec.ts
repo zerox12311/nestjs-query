@@ -7,7 +7,7 @@ describe('WhereBuilder', (): void => {
   const createWhereBuilder = () => new WhereBuilder<TestEntity>();
 
   const assertSQL = (filter: Filter<TestEntity>, expectedWhereOpts: WhereOptions): void => {
-    const actual = createWhereBuilder().build(filter, 'TestEntity');
+    const actual = createWhereBuilder().build(filter);
     expect(actual).toEqual(expectedWhereOpts);
   };
 
@@ -24,10 +24,10 @@ describe('WhereBuilder', (): void => {
         [Op.and]: [
           {
             [Op.or]: [
-              { 'TestEntity.numberType': { [Op.gt]: 10 } },
-              { 'TestEntity.numberType': { [Op.lt]: 20 } },
-              { 'TestEntity.numberType': { [Op.gte]: 21 } },
-              { 'TestEntity.numberType': { [Op.lte]: 31 } },
+              { numberType: { [Op.gt]: 10 } },
+              { numberType: { [Op.lt]: 20 } },
+              { numberType: { [Op.gte]: 21 } },
+              { numberType: { [Op.lte]: 31 } },
             ],
           },
         ],
@@ -46,21 +46,9 @@ describe('WhereBuilder', (): void => {
         [Op.and]: [
           {
             [Op.and]: [
-              {
-                'TestEntity.numberType': {
-                  [Op.eq]: 1,
-                },
-              },
-              {
-                'TestEntity.stringType': {
-                  [Op.like]: 'foo%',
-                },
-              },
-              {
-                'TestEntity.boolType': {
-                  [Op.is]: true,
-                },
-              },
+              { numberType: { [Op.eq]: 1 } },
+              { stringType: { [Op.like]: 'foo%' } },
+              { boolType: { [Op.is]: true } },
             ],
           },
         ],

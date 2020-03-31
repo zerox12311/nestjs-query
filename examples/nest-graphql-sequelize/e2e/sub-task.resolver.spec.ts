@@ -20,7 +20,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
       new ValidationPipe({
         transform: true,
         whitelist: true,
-        exceptionFactory: errors => new BadRequestException(errors),
+        exceptionFactory: (errors) => new BadRequestException(errors),
         forbidNonWhitelisted: true,
         skipMissingProperties: false,
         forbidUnknownValues: true,
@@ -211,7 +211,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
           });
           expect(edges).toHaveLength(10);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(subTasks.slice(0, 10));
+          expect(edges.map((e) => e.node)).toEqual(subTasks.slice(0, 10));
         });
     });
 
@@ -239,7 +239,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
           });
           expect(edges).toHaveLength(3);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(subTasks.slice(0, 3));
+          expect(edges.map((e) => e.node)).toEqual(subTasks.slice(0, 3));
         });
     });
 
@@ -267,12 +267,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
           });
           expect(edges).toHaveLength(10);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(
-            subTasks
-              .slice()
-              .reverse()
-              .slice(0, 10),
-          );
+          expect(edges.map((e) => e.node)).toEqual(subTasks.slice().reverse().slice(0, 10));
         });
     });
 
@@ -301,7 +296,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
             });
             expect(edges).toHaveLength(2);
             // @ts-ignore
-            expect(edges.map(e => e.node)).toEqual(subTasks.slice(0, 2));
+            expect(edges.map((e) => e.node)).toEqual(subTasks.slice(0, 2));
           });
       });
 
@@ -329,7 +324,7 @@ describe('SubTaskResolver (sequelize - e2e)', () => {
             });
             expect(edges).toHaveLength(2);
             // @ts-ignore
-            expect(edges.map(e => e.node)).toEqual(subTasks.slice(2, 4));
+            expect(edges.map((e) => e.node)).toEqual(subTasks.slice(2, 4));
           });
       });
     });

@@ -27,9 +27,6 @@ export class TagEntity extends Model<TagEntity> {
   @UpdatedAt
   updated!: Date;
 
-  @BelongsToMany(
-    () => TodoItemEntity,
-    () => TodoItemEntityTags,
-  )
+  @BelongsToMany(() => TodoItemEntity, () => TodoItemEntityTags)
   todoItems!: TodoItemEntity[];
 }

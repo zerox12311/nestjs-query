@@ -1,6 +1,6 @@
-import { Query, QueryService } from '@nestjs-query/core';
+import { DeepPartial, Filter, Query, QueryService } from '@nestjs-query/core';
 import { FindOptions } from 'sequelize';
-import { instance, mock, when, objectContaining } from 'ts-mockito';
+import { instance, mock, when, objectContaining, deepEqual } from 'ts-mockito';
 import { ModelCtor } from 'sequelize-typescript';
 import { SequelizeQueryService } from '../../src';
 import { FilterQueryBuilder } from '../../src/query';
@@ -13,22 +13,24 @@ describe('SequelizeQueryService', (): void => {
 
   afterAll(() => closeSequelize());
 
-  const testEntities = (): TestEntity[] => [
-    new TestEntity({
+  const plainEntities = [
+    {
       testEntityPk: 'entity-id1',
       stringType: 'foo',
       boolType: true,
       dateType: new Date(),
       numberType: 1,
-    }),
-    new TestEntity({
+    },
+    {
       testEntityPk: 'entity-id2',
       stringType: 'bar',
       boolType: false,
       dateType: new Date(),
       numberType: 2,
-    }),
+    },
   ];
+
+  const testEntities = (): TestEntity[] => plainEntities.map((e) => new TestEntity(e));
 
   const testRelations = (entityId: string): TestRelation[] => [
     new TestRelation({ testRelationPk: `relation-${entityId}-id1`, relationName: 'name 1', testEntityId: entityId }),
@@ -182,8 +184,8 @@ describe('SequelizeQueryService', (): void => {
         const { queryService, mockModelCtor } = createQueryService<TestRelation>();
         // @ts-ignore
         when(mockModelCtor.associations).thenReturn({});
-        expect(queryService.findRelation(TestRelation, relationName, instance(mockModel))).rejects.toThrowError(
-          `Unable to find relation ${relationName} on TestEntity`,
+        return expect(queryService.findRelation(TestRelation, relationName, instance(mockModel))).rejects.toThrow(
+          `Unable to find relation ${relationName} on`,
         );
       });
     });
@@ -230,34 +232,40 @@ describe('SequelizeQueryService', (): void => {
     it('call select and return the result', async () => {
       const entity = testEntities()[0];
       const relations = testRelations(entity.testEntityPk);
-      const relationIds = relations.map(r => r.testRelationPk);
+      const relationIds = relations.map((r) => r.testRelationPk);
       const mockModel = mock(TestEntity);
-      const modelInstance = instance(mockModel);
       const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      const modelInstance = instance(mockModel);
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
       // @ts-ignore
-      when(mockModelCtor.findByPk(entity.id, objectContaining({ rejectOnEmpty: true }))).thenReturn(modelInstance);
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
       when(mockModel.$add(relationName, relationIds)).thenResolve(relations);
-      const queryResult = await queryService.addRelations(relationName, entity.id, relationIds);
-      expect(queryResult).toEqual(modelInstance);
+      const queryResult = await queryService.addRelations(relationName, entity.testEntityPk, relationIds);
+      return expect(queryResult).toEqual(modelInstance);
     });
   });
 
   describe('#setRelation', () => {
+    const relationName = 'oneTestRelation';
     it('call select and return the result', async () => {
-      const relationName = 'oneTestRelation';
-      it('call select and return the result', async () => {
-        const entity = testEntities()[0];
-        const relation = testRelations(entity.testEntityPk)[0];
-        const relationId = relation.testRelationPk;
-        const mockModel = mock(TestEntity);
-        const modelInstance = instance(mockModel);
-        const { queryService } = createQueryService<TestRelation>();
-        // @ts-ignore
-        when(mockModel.findById(entity.id)).thenReturn(modelInstance);
-        when(mockModel.$set(relationName, relationId)).thenResolve(relation);
-        const queryResult = await queryService.setRelation(relationName, entity.id, relationId);
-        expect(queryResult).toEqual(modelInstance);
-      });
+      const entity = testEntities()[0];
+      const relation = testRelations(entity.testEntityPk)[0];
+      const relationId = relation.testRelationPk;
+      const mockModel = mock(TestEntity);
+      const modelInstance = instance(mockModel);
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
+      // @ts-ignore
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
+      when(mockModel.$set(relationName, relationId)).thenResolve(relation);
+      const queryResult = await queryService.setRelation(relationName, entity.testEntityPk, relationId);
+      return expect(queryResult).toEqual(modelInstance);
     });
   });
 
@@ -266,15 +274,19 @@ describe('SequelizeQueryService', (): void => {
     it('call select and return the result', async () => {
       const entity = testEntities()[0];
       const relations = testRelations(entity.testEntityPk);
-      const relationIds = relations.map(r => r.testRelationPk);
+      const relationIds = relations.map((r) => r.testRelationPk);
       const mockModel = mock(TestEntity);
       const modelInstance = instance(mockModel);
-      const { queryService } = createQueryService<TestRelation>();
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
       // @ts-ignore
-      when(mockModel.findById(entity.id)).thenReturn(modelInstance);
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
       when(mockModel.$add(relationName, relationIds)).thenResolve(relations);
-      const queryResult = await queryService.removeRelations(relationName, entity.id, relationIds);
-      expect(queryResult).toEqual(modelInstance);
+      const queryResult = await queryService.removeRelations(relationName, entity.testEntityPk, relationIds);
+      return expect(queryResult).toEqual(modelInstance);
     });
   });
   //
@@ -286,193 +298,159 @@ describe('SequelizeQueryService', (): void => {
       const relationId = relation.testRelationPk;
       const mockModel = mock(TestEntity);
       const modelInstance = instance(mockModel);
-      const { queryService } = createQueryService<TestRelation>();
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
       // @ts-ignore
-      when(mockModel.findById(entity.id)).thenReturn(modelInstance);
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
       when(mockModel.$set(relationName, relationId)).thenResolve(relation);
-      const queryResult = await queryService.removeRelation(relationName, entity.id, relationId);
-      expect(queryResult).toEqual(modelInstance);
+      const queryResult = await queryService.removeRelation(relationName, entity.testEntityPk, relationId);
+      return expect(queryResult).toEqual(modelInstance);
     });
   });
-  //
-  // describe('#findById', () => {
-  //   it('call findOne on the repo', async () => {
-  //     const entity = testEntities()[0];
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.findOne(entity.testEntityPk)).thenResolve(entity);
-  //     const queryResult = await queryService.findById(entity.testEntityPk);
-  //     expect(queryResult).toEqual(entity);
-  //   });
-  //
-  //   it('return undefined if not found', async () => {
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.findOne(1)).thenResolve(undefined);
-  //     const queryResult = await queryService.findById(1);
-  //     expect(queryResult).toBeUndefined();
-  //   });
-  // });
-  //
-  // describe('#getById', () => {
-  //   it('call findOneOrFail on the repo', async () => {
-  //     const entity = testEntities()[0];
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.findOneOrFail(entity.testEntityPk)).thenResolve(entity);
-  //     const queryResult = await queryService.getById(entity.testEntityPk);
-  //     expect(queryResult).toEqual(entity);
-  //   });
-  // });
-  //
-  // describe('#createMany', () => {
-  //   it('call save on the repo with instances of entities when passed plain objects', async () => {
-  //     const entities = testEntities();
-  //     const entityInstances = entities.map(e => plainToClass(TestEntity, e));
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.save(entities)).thenResolve(entityInstances);
-  //     const queryResult = await queryService.createMany(entities);
-  //     expect(queryResult).toEqual(entityInstances);
-  //   });
-  //
-  //   it('call save on the repo with instances of entities when passed instances', async () => {
-  //     const entities = testEntities();
-  //     const entityInstances = entities.map(e => plainToClass(TestEntity, e));
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.save(deepEqual(entityInstances))).thenResolve(entityInstances);
-  //     const queryResult = await queryService.createMany(entityInstances);
-  //     expect(queryResult).toEqual(entityInstances);
-  //   });
-  // });
-  //
-  // describe('#createOne', () => {
-  //   it('call save on the repo with an instance of the entity when passed a plain object', async () => {
-  //     const entity = testEntities()[0];
-  //     const entityInstance = plainToClass(TestEntity, entity);
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.save(deepEqual(entityInstance))).thenResolve(entityInstance);
-  //     const queryResult = await queryService.createOne(entityInstance);
-  //     expect(queryResult).toEqual(entityInstance);
-  //   });
-  //
-  //   it('call save on the repo with an instance of the entity when passed an instance', async () => {
-  //     const entity = testEntities()[0];
-  //     const entityInstance = plainToClass(TestEntity, entity);
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.save(entity)).thenResolve(entityInstance);
-  //     const queryResult = await queryService.createOne(entity);
-  //     expect(queryResult).toEqual(entityInstance);
-  //   });
-  // });
-  //
-  // describe('#deleteMany', () => {
-  //   it('create a delete query builder and call execute', async () => {
-  //     const affected = 10;
-  //     const deleteMany: Filter<TestEntity> = { stringType: { eq: 'foo' } };
-  //     const { queryService, mockQueryBuilder, mockRepo } = createQueryService();
-  //     const deleteQueryBuilder: DeleteQueryBuilder<TestEntity> = mock(DeleteQueryBuilder);
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockQueryBuilder.delete(objectContaining({ filter: deleteMany }))).thenReturn(instance(deleteQueryBuilder));
-  //     when(deleteQueryBuilder.execute()).thenResolve({ raw: undefined, affected });
-  //     const queryResult = await queryService.deleteMany(deleteMany);
-  //     expect(queryResult).toEqual({ deletedCount: affected });
-  //   });
-  //
-  //   it('should return 0 if affected is not returned', async () => {
-  //     const deleteMany: Filter<TestEntity> = { stringType: { eq: 'foo' } };
-  //     const { queryService, mockQueryBuilder, mockRepo } = createQueryService();
-  //     const deleteQueryBuilder: DeleteQueryBuilder<TestEntity> = mock(DeleteQueryBuilder);
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockQueryBuilder.delete(objectContaining({ filter: deleteMany }))).thenReturn(instance(deleteQueryBuilder));
-  //     when(deleteQueryBuilder.execute()).thenResolve({ raw: undefined });
-  //     const queryResult = await queryService.deleteMany(deleteMany);
-  //     expect(queryResult).toEqual({ deletedCount: 0 });
-  //   });
-  // });
-  //
-  // describe('#deleteOne', () => {
-  //   it('call getOne and then remove the entity', async () => {
-  //     const entity = testEntities()[0];
-  //     const { testEntityPk } = entity;
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.findOneOrFail(testEntityPk)).thenResolve(entity);
-  //     when(mockRepo.remove(entity)).thenResolve(entity);
-  //     const queryResult = await queryService.deleteOne(testEntityPk);
-  //     expect(queryResult).toEqual(entity);
-  //   });
-  //
-  //   it('call fail if the entity is not found', async () => {
-  //     const entity = testEntities()[0];
-  //     const { testEntityPk } = entity;
-  //     const err = new Error('not found');
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.findOneOrFail(testEntityPk)).thenReject(err);
-  //     return expect(queryService.deleteOne(testEntityPk)).rejects.toThrowError(err);
-  //   });
-  // });
-  //
-  // describe('#updateMany', () => {
-  //   it('create a query to update all entities', async () => {
-  //     const entity = testEntities()[0];
-  //     const update = { stringType: 'baz' };
-  //     const filter: Filter<TestEntity> = { testEntityPk: { eq: entity.testEntityPk } };
-  //     const affected = 10;
-  //     const { queryService, mockQueryBuilder, mockRepo } = createQueryService();
-  //     const mockUpdateQueryBuilder: UpdateQueryBuilder<TestEntity> = mock(UpdateQueryBuilder);
-  //     const mockUpdateQueryBuilderInstance = instance(mockUpdateQueryBuilder);
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockQueryBuilder.update(objectContaining({ filter }))).thenReturn(mockUpdateQueryBuilderInstance);
-  //     when(mockUpdateQueryBuilder.set(objectContaining(update))).thenReturn(mockUpdateQueryBuilderInstance);
-  //     when(mockUpdateQueryBuilder.execute()).thenResolve({ generatedMaps: [], raw: undefined, affected });
-  //     when(mockRepo.remove(entity)).thenResolve(entity);
-  //     const queryResult = await queryService.updateMany(update, filter);
-  //     expect(queryResult).toEqual({ updatedCount: affected });
-  //   });
-  //
-  //   it('should return 0 if affected is not defined', async () => {
-  //     const entity = testEntities()[0];
-  //     const update = { stringType: 'baz' };
-  //     const filter: Filter<TestEntity> = { testEntityPk: { eq: entity.testEntityPk } };
-  //     const { queryService, mockQueryBuilder, mockRepo } = createQueryService();
-  //     const mockUpdateQueryBuilder: UpdateQueryBuilder<TestEntity> = mock(UpdateQueryBuilder);
-  //     const mockUpdateQueryBuilderInstance = instance(mockUpdateQueryBuilder);
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockQueryBuilder.update(objectContaining({ filter }))).thenReturn(mockUpdateQueryBuilderInstance);
-  //     when(mockUpdateQueryBuilder.set(objectContaining(update))).thenReturn(mockUpdateQueryBuilderInstance);
-  //     when(mockUpdateQueryBuilder.execute()).thenResolve({ generatedMaps: [], raw: undefined });
-  //     when(mockRepo.remove(entity)).thenResolve(entity);
-  //     const queryResult = await queryService.updateMany(update, filter);
-  //     expect(queryResult).toEqual({ updatedCount: 0 });
-  //   });
-  // });
-  //
-  // describe('#updateOne', () => {
-  //   it('call getOne and then remove the entity', async () => {
-  //     const entity = testEntities()[0];
-  //     const updateId = entity.testEntityPk;
-  //     const update = { stringType: 'baz' };
-  //     const savedEntity = plainToClass(TestEntity, { ...entity, ...update });
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.target).thenReturn(TestEntity);
-  //     when(mockRepo.findOneOrFail(updateId)).thenResolve(entity);
-  //     when(mockRepo.merge(entity, update)).thenReturn(savedEntity);
-  //     when(mockRepo.save(deepEqual(savedEntity))).thenResolve(savedEntity);
-  //     const queryResult = await queryService.updateOne(updateId, update);
-  //     expect(queryResult).toEqual(savedEntity);
-  //   });
-  //
-  //   it('call fail if the entity is not found', async () => {
-  //     const entity = testEntities()[0];
-  //     const updateId = entity.testEntityPk;
-  //     const update = { stringType: 'baz' };
-  //     const err = new Error('not found');
-  //     const { queryService, mockRepo } = createQueryService();
-  //     when(mockRepo.findOneOrFail(updateId)).thenReject(err);
-  //     return expect(queryService.updateOne(updateId, update)).rejects.toThrowError(err);
-  //   });
-  // });
+
+  describe('#findById', () => {
+    it('call findOne on the repo', async () => {
+      const entity = testEntities()[0];
+      const { queryService, mockModelCtor } = createQueryService();
+      when(mockModelCtor.findByPk(entity.testEntityPk)).thenResolve(entity);
+      const queryResult = await queryService.findById(entity.testEntityPk);
+      expect(queryResult).toEqual(entity);
+    });
+
+    it('return undefined if not found', async () => {
+      const { queryService, mockModelCtor } = createQueryService();
+      when(mockModelCtor.findByPk(1)).thenResolve(null);
+      const queryResult = await queryService.findById(1);
+      expect(queryResult).toBeUndefined();
+    });
+  });
+
+  describe('#getById', () => {
+    it('call findByPk on the model with rejectOnEmpty', async () => {
+      const entity = testEntities()[0];
+      const { queryService, mockModelCtor } = createQueryService();
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(entity);
+      const queryResult = await queryService.getById(entity.testEntityPk);
+      expect(queryResult).toEqual(entity);
+    });
+  });
+
+  describe('#createMany', () => {
+    it('call save on the repo with instances of entities when passed plain objects', async () => {
+      const entities = testEntities();
+      const { queryService, mockModelCtor } = createQueryService();
+      when(mockModelCtor.bulkCreate(deepEqual(plainEntities))).thenResolve(entities);
+      const queryResult = await queryService.createMany(plainEntities as DeepPartial<TestEntity>[]);
+      expect(queryResult).toEqual(entities);
+    });
+  });
+
+  describe('#createOne', () => {
+    it('call save on the repo with an instance of the entity when passed a plain object', async () => {
+      const entities = testEntities();
+      const { queryService, mockModelCtor } = createQueryService();
+      when(mockModelCtor.create(deepEqual(plainEntities[0]))).thenResolve(entities[0]);
+      const queryResult = await queryService.createOne(plainEntities[0] as DeepPartial<TestEntity>);
+      expect(queryResult).toEqual(entities[0]);
+    });
+  });
+
+  describe('#deleteMany', () => {
+    it('create call destroy with the generated options', async () => {
+      const affected = 10;
+      const deleteMany: Filter<TestEntity> = { stringType: { eq: 'foo' } };
+      const destroyOptions = {};
+      const { queryService, mockQueryBuilder, mockModelCtor } = createQueryService();
+      when(mockQueryBuilder.destroyOptions(objectContaining({ filter: deleteMany }))).thenReturn(destroyOptions);
+      when(mockModelCtor.destroy(destroyOptions)).thenResolve(affected);
+      const queryResult = await queryService.deleteMany(deleteMany);
+      expect(queryResult).toEqual({ deletedCount: affected });
+    });
+  });
+
+  describe('#deleteOne', () => {
+    it('call getOne and then remove the entity', async () => {
+      const entity = testEntities()[0];
+      const { testEntityPk } = entity;
+      const mockModel = mock(TestEntity);
+      const modelInstance = instance(mockModel);
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
+      // @ts-ignore
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
+      when(mockModel.destroy()).thenResolve();
+      const queryResult = await queryService.deleteOne(testEntityPk);
+      expect(queryResult).toEqual(modelInstance);
+    });
+
+    it('call fail if the entity is not found', async () => {
+      const entity = testEntities()[0];
+      const { testEntityPk } = entity;
+      const err = new Error('not found');
+      const mockModel = mock(TestEntity);
+      const modelInstance = instance(mockModel);
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
+      // @ts-ignore
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenReject(err);
+      return expect(queryService.deleteOne(testEntityPk)).rejects.toThrowError(err);
+    });
+  });
+
+  describe('#updateMany', () => {
+    it('create call update with the generated options', async () => {
+      const affected = 10;
+      const entities = testEntities();
+      const updateMany: Filter<TestEntity> = { stringType: { eq: 'foo' } };
+      const update = plainEntities[0];
+      const updateOptions = { where: {} };
+      const { queryService, mockQueryBuilder, mockModelCtor } = createQueryService();
+      when(mockQueryBuilder.updateOptions(objectContaining({ filter: updateMany }))).thenReturn(updateOptions);
+      when(mockModelCtor.update(update, updateOptions)).thenResolve([affected, entities]);
+      const queryResult = await queryService.updateMany(update, updateMany);
+      expect(queryResult).toEqual({ updatedCount: affected });
+    });
+  });
+
+  describe('#updateOne', () => {
+    it('call getOne and then remove the entity', async () => {
+      const entity = testEntities()[0];
+      const { testEntityPk } = entity;
+      const update = { stringType: 'baz' };
+      const mockModel = mock(TestEntity);
+      const modelInstance = instance(mockModel);
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
+      // @ts-ignore
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenResolve(
+        modelInstance,
+      );
+      when(mockModel.update(update)).thenResolve(entity);
+      const queryResult = await queryService.updateOne(testEntityPk, update);
+      expect(queryResult).toEqual(entity);
+    });
+
+    it('call fail if the entity is not found', async () => {
+      const entity = testEntities()[0];
+      const { testEntityPk } = entity;
+      const update = { stringType: 'baz' };
+      const err = new Error('not found');
+      const mockModel = mock(TestEntity);
+      const modelInstance = instance(mockModel);
+      const { queryService, mockModelCtor } = createQueryService<TestRelation>();
+      // this is required to make tests pass see https://github.com/NagRock/ts-mockito/issues/163
+      // @ts-ignore
+      modelInstance.then = undefined;
+      when(mockModelCtor.findByPk(entity.testEntityPk, objectContaining({ rejectOnEmpty: true }))).thenReject(err);
+      return expect(queryService.updateOne(testEntityPk, update)).rejects.toThrowError(err);
+    });
+  });
 });

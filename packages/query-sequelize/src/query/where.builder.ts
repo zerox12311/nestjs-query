@@ -13,20 +13,19 @@ export class WhereBuilder<Entity> {
    * Builds a WHERE clause from a Filter.
    * @param where - the `typeorm` WhereExpression
    * @param filter - the filter to build the WHERE clause from.
-   * @param alias - optional alias to use to qualify an identifier
    */
-  build(filter: Filter<Entity>, alias?: string): WhereOptions {
+  build(filter: Filter<Entity>): WhereOptions {
     const { and, or } = filter;
     let ands: WhereOptions[] = [];
     let ors: WhereOptions[] = [];
     let whereOpts: WhereOptions = {};
     if (and && and.length) {
-      ands = and.map(f => this.build(f));
+      ands = and.map((f) => this.build(f));
     }
     if (or && or.length) {
-      ors = or.map(f => this.build(f));
+      ors = or.map((f) => this.build(f));
     }
-    const filterAnds = this.filterFields(filter, alias);
+    const filterAnds = this.filterFields(filter);
     if (filterAnds) {
       ands = [...ands, filterAnds];
     }
@@ -43,14 +42,11 @@ export class WhereBuilder<Entity> {
    * Creates field comparisons from a filter. This method will ignore and/or properties.
    * @param where - the `typeorm` WhereExpression
    * @param filter - the filter with fields to create comparisons for.
-   * @param alias - optional alias to use to qualify an identifier
    */
-  private filterFields(filter: Filter<Entity>, alias?: string): WhereOptions | undefined {
+  private filterFields(filter: Filter<Entity>): WhereOptions | undefined {
     const ands = Object.keys(filter)
-      .filter(f => f !== 'and' && f !== 'or')
-      .map(field =>
-        this.withFilterComparison(field as keyof Entity, this.getField(filter, field as keyof Entity), alias),
-      );
+      .filter((f) => f !== 'and' && f !== 'or')
+      .map((field) => this.withFilterComparison(field as keyof Entity, this.getField(filter, field as keyof Entity)));
     if (ands.length === 1) {
       return ands[0];
     }
@@ -67,19 +63,15 @@ export class WhereBuilder<Entity> {
     return obj[field] as FilterFieldComparison<Entity[K]>;
   }
 
-  private withFilterComparison<T extends keyof Entity>(
-    field: T,
-    cmp: FilterFieldComparison<Entity[T]>,
-    alias?: string,
-  ): WhereOptions {
+  private withFilterComparison<T extends keyof Entity>(field: T, cmp: FilterFieldComparison<Entity[T]>): WhereOptions {
     const opts = Object.keys(cmp) as FilterComparisonOperators<Entity[T]>[];
     if (opts.length === 1) {
       const cmpType = opts[0];
-      return this.sqlComparisionBuilder.build(field, cmpType, cmp[cmpType] as EntityComparisonField<Entity, T>, alias);
+      return this.sqlComparisionBuilder.build(field, cmpType, cmp[cmpType] as EntityComparisonField<Entity, T>);
     }
     return {
-      [Op.or]: opts.map(cmpType =>
-        this.sqlComparisionBuilder.build(field, cmpType, cmp[cmpType] as EntityComparisonField<Entity, T>, alias),
+      [Op.or]: opts.map((cmpType) =>
+        this.sqlComparisionBuilder.build(field, cmpType, cmp[cmpType] as EntityComparisonField<Entity, T>),
       ),
     };
   }

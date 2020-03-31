@@ -27,10 +27,7 @@ export class TestEntity extends Model<TestEntity> {
   @HasMany(() => TestRelation)
   testRelations?: TestRelation[];
 
-  @BelongsToMany(
-    () => TestRelation,
-    () => TestEntityTestRelationEntity,
-  )
+  @BelongsToMany(() => TestRelation, () => TestEntityTestRelationEntity)
   manyTestRelations?: TestRelation[];
 
   @HasOne(() => TestRelation)

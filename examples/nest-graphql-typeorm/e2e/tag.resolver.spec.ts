@@ -19,7 +19,7 @@ describe('TagResolver (typeorm - e2e)', () => {
       new ValidationPipe({
         transform: true,
         whitelist: true,
-        exceptionFactory: errors => new BadRequestException(errors),
+        exceptionFactory: (errors) => new BadRequestException(errors),
         forbidNonWhitelisted: true,
         skipMissingProperties: false,
         forbidUnknownValues: true,
@@ -101,7 +101,7 @@ describe('TagResolver (typeorm - e2e)', () => {
           });
           expect(edges).toHaveLength(2);
           // @ts-ignore
-          expect(edges.map(e => e.node.id)).toEqual(['1', '2']);
+          expect(edges.map((e) => e.node.id)).toEqual(['1', '2']);
         });
     });
   });
@@ -131,7 +131,7 @@ describe('TagResolver (typeorm - e2e)', () => {
           });
           expect(edges).toHaveLength(5);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(tags);
+          expect(edges.map((e) => e.node)).toEqual(tags);
         });
     });
 
@@ -159,7 +159,7 @@ describe('TagResolver (typeorm - e2e)', () => {
           });
           expect(edges).toHaveLength(3);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(tags.slice(0, 3));
+          expect(edges.map((e) => e.node)).toEqual(tags.slice(0, 3));
         });
     });
 
@@ -187,7 +187,7 @@ describe('TagResolver (typeorm - e2e)', () => {
           });
           expect(edges).toHaveLength(5);
           // @ts-ignore
-          expect(edges.map(e => e.node)).toEqual(tags.slice().reverse());
+          expect(edges.map((e) => e.node)).toEqual(tags.slice().reverse());
         });
     });
 
@@ -216,7 +216,7 @@ describe('TagResolver (typeorm - e2e)', () => {
             });
             expect(edges).toHaveLength(2);
             // @ts-ignore
-            expect(edges.map(e => e.node)).toEqual(tags.slice(0, 2));
+            expect(edges.map((e) => e.node)).toEqual(tags.slice(0, 2));
           });
       });
 
@@ -244,7 +244,7 @@ describe('TagResolver (typeorm - e2e)', () => {
             });
             expect(edges).toHaveLength(2);
             // @ts-ignore
-            expect(edges.map(e => e.node)).toEqual(tags.slice(2, 4));
+            expect(edges.map((e) => e.node)).toEqual(tags.slice(2, 4));
           });
       });
     });
@@ -666,7 +666,7 @@ describe('TagResolver (typeorm - e2e)', () => {
             startCursor: 'YXJyYXljb25uZWN0aW9uOjA=',
           });
           // @ts-ignore
-          expect(edges.map(e => e.node.title).sort()).toEqual([
+          expect(edges.map((e) => e.node.title).sort()).toEqual([
             'Add Todo Item Resolver',
             'Create Entity',
             'Create Entity Service',
@@ -711,7 +711,7 @@ describe('TagResolver (typeorm - e2e)', () => {
             startCursor: 'YXJyYXljb25uZWN0aW9uOjA=',
           });
           // @ts-ignore
-          expect(edges.map(e => e.node.title)).toEqual(['Create Nest App', 'Create Entity']);
+          expect(edges.map((e) => e.node.title)).toEqual(['Create Nest App', 'Create Entity']);
         });
     });
   });

@@ -12,7 +12,7 @@ function createSequelizeQueryServiceProvider<Entity extends Model>(
   return {
     provide: getSequelizeQueryServiceKey(EntityClass),
     useFactory(entity: ModelCtor<Entity>) {
-      AssemblerSerializer<Entity>(instance => instance.get({ plain: true }))(entity);
+      AssemblerSerializer<Entity>((instance) => instance.get({ plain: true }))(entity);
       AssemblerDeserializer<Entity>((obj: object) => entity.build(obj) as Entity)(entity);
       return new SequelizeQueryService(entity);
     },
@@ -23,4 +23,4 @@ function createSequelizeQueryServiceProvider<Entity extends Model>(
 export const createSequelizeQueryServiceProviders = (
   entities: ModelCtor[],
   connection?: SequelizeOptions | string,
-): FactoryProvider[] => entities.map(entity => createSequelizeQueryServiceProvider(entity, connection));
+): FactoryProvider[] => entities.map((entity) => createSequelizeQueryServiceProvider(entity, connection));
